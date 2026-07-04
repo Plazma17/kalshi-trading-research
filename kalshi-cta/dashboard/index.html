@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/png" href="icon.png" />
+<title>CTA · EVOLUTION</title>
+<style>
+:root{
+  --bg:#000000; --panel:#0a0e0a; --border:#1c241c; --text:#cdd6cd; --dim:#6b786b;
+  --amber:#f0a000; --cyan:#4fd0e0; --up:#3ec46d; --down:#ff5555; --hold:#e0b020; --hot:#ffcf4d;
+  font-family:'Cascadia Mono','Consolas',ui-monospace,'Courier New',monospace; font-size:13px;
+}
+/* NIGHT MODE — black bg, dark-gray lettering + accents */
+[data-theme='night']{
+  --bg:#000000; --panel:#070707; --border:#161616; --text:#777777; --dim:#444444;
+  --amber:#6e6e6e; --cyan:#5f6a6a; --up:#5c8266; --down:#8f5c5c; --hold:#6f6a55; --hot:#8a8a8a;
+}
+[data-theme='night'] #m-btc, [data-theme='night'] .countdown{color:#8a8a8a !important;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);}
+.term{display:flex;flex-direction:column;height:100vh;}
+.ribbon{display:flex;flex-wrap:nowrap;overflow-x:auto;align-items:center;background:#050805;border-bottom:1px solid var(--border);padding:5px 8px;font-size:12px;white-space:nowrap;}
+.ribbon::-webkit-scrollbar{height:0;}
+#fsbtn,#chart-fs{display:none !important;}
+.ribbon .brand{color:var(--amber);font-weight:700;letter-spacing:1px;padding-right:10px;}
+.ribbon .seg{padding:0 12px;border-left:1px solid var(--border);}
+.ribbon .seg .k{color:var(--cyan);} .ribbon #r-status{display:inline-block;min-width:82px;text-align:left;} .ribbon .live{color:var(--up);font-weight:700;} .ribbon .stale{color:#ff3b3b !important;font-weight:700;}
+.body{flex:1;overflow:auto;padding:12px;}
+.row{display:flex;gap:12px;align-items:stretch;margin-bottom:12px;flex-wrap:wrap;}
+.panel{background:var(--panel);border:1px solid var(--border);border-top:3px solid var(--cyan);padding:10px 12px;}
+.panel.amber{border-top-color:var(--amber);} .panel.grow{flex:1;min-width:300px;}
+.phead{color:var(--cyan);font-size:11px;letter-spacing:1px;font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between;}
+.phead .sub{color:var(--dim);font-weight:400;}
+.bignums{display:flex;flex-wrap:wrap;gap:20px;}
+.bn{display:flex;flex-direction:column;}
+.bnval{font-size:26px;font-weight:700;color:var(--amber);line-height:1.1;}
+.bnval.ok{color:var(--up);} .bnval.bad{color:var(--down);} .bnval.dim{color:var(--dim);} .bnval.sm{font-size:19px;}
+.bnlbl{font-size:10px;letter-spacing:1px;color:var(--cyan);margin-top:2px;}
+.up{color:var(--up);} .down{color:var(--down);} .amber{color:var(--amber);} .cyan{color:var(--cyan);} .dim{color:var(--dim);} .hot{color:var(--hot);}
+.gauge{position:relative;height:22px;background:#070b07;border:1px solid var(--border);margin:8px 0 2px;}
+.gauge .mark{position:absolute;top:-2px;bottom:-2px;width:2px;} .gauge .mark.fair{background:var(--cyan);} .gauge .mark.mid{background:var(--amber);}
+.gauge .half{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border);}
+.gaugekey{font-size:10px;color:var(--dim);}
+table.sig{width:100%;border-collapse:collapse;font-size:12px;}
+table.sig th{text-align:left;color:var(--cyan);font-weight:400;font-size:11px;letter-spacing:1px;border-bottom:1px solid var(--border);padding:3px 8px;position:sticky;top:0;background:var(--panel);}
+table.sig td{padding:2px 8px;border-bottom:1px solid #111611;white-space:nowrap;}
+table.sig td.r,table.sig th.r{text-align:right;}
+table.sig tr.gen0 td:first-child{border-left:2px solid var(--dim);}
+table.sig tr[data-bot]:hover td{background:rgba(79,208,224,0.07);}
+.botcard-row:hover{background:rgba(79,208,224,0.08)!important;}
+#bot-cards .botcard-row.sel{outline:1px solid rgba(240,210,90,0.5);outline-offset:-1px;}
+table.sig tr.sel td{background:rgba(240,160,0,0.14);}
+[data-theme='night'] table.sig tr.sel td{background:rgba(140,140,140,0.16);}
+.swatch{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:middle;}
+.tag{font-size:10px;border:1px solid var(--border);padding:0 4px;color:var(--dim);}
+/* BOT PINNING: a small pushpin toggle on every bot surface; pinned bots sort first + get a gold accent. */
+.pin-toggle{display:inline-block;cursor:pointer;opacity:.22;font-size:11px;line-height:1;padding:0 3px;vertical-align:middle;user-select:none;filter:grayscale(1);transition:opacity .1s;}
+.pin-toggle:hover{opacity:.7;}
+.pin-toggle.on{opacity:1;filter:none;}
+tr.pinned-row td{background:rgba(240,210,90,0.06);}
+tr.pinned-row td:first-child{box-shadow:inset 3px 0 0 #f0d25a;}
+.botcard-row.pinned-row{box-shadow:inset 3px 0 0 #f0d25a;}
+.nn-card.pinned-row{box-shadow:inset 3px 0 0 #f0d25a;}
+::-webkit-scrollbar{width:10px;height:10px;} ::-webkit-scrollbar-thumb{background:#1c241c;} ::-webkit-scrollbar-track{background:#000;}
+.countdown{font-size:26px;font-weight:700;color:var(--hot);}
+#themebtn:hover,#fsbtn:hover{color:var(--amber);}
+#vtrace.fs{position:fixed;inset:0;margin:auto;width:min(100vw,calc(100vh*900/340)) !important;height:auto !important;aspect-ratio:900/340;max-width:none;z-index:9999;background:#070b07;box-shadow:0 0 0 100vmax #000;}
+#chart-fs:hover{color:var(--amber) !important;}
+.ribbon{font-size:11px;} .ribbon .seg{padding:0 7px;} .ribbon .seg span[id^='r-']{display:inline-block;min-width:46px;}
+</style>
+<script>(function(){var t=localStorage.getItem('cta-theme')||'night';if(t==='night')document.documentElement.setAttribute('data-theme','night');})()</script>
+</head>
+<body>
+<div class="term">
+  <div class="ribbon">
+    <span class="brand">CTA ▪ EVOLUTION</span>
+    <span class="seg"><span class="k">STATUS </span><span class="live" id="r-status">…</span></span>
+    <span class="seg"><span class="k">WINDOW </span><span id="r-win">—</span> <span class="dim" id="r-widx"></span></span>
+    <span class="seg"><span class="k">BTC </span><span class="amber" id="r-btc">—</span></span>
+    <span class="seg"><span class="k">STRIKE </span><span id="r-strike">—</span></span>
+    <span class="seg"><span class="k">σ </span><span id="r-sig">—</span></span>
+    <span class="seg"><span class="k">STRIKE-z </span><span id="r-zstrike">—</span> <span id="r-gate"></span></span>
+    <span class="seg"><span class="k">SETTLE </span><span class="hot" id="r-cd">—</span></span>
+    <span class="seg"><span class="k">BOTS </span><span class="amber" id="r-bots">—</span></span>
+    <span class="seg"><span class="k">FAIR </span><span id="r-calib" title="fair-model calibration gate">…</span></span>
+    <span class="seg"><span class="k">UPD </span><span class="dim" id="r-upd">—</span></span>
+    <span class="seg" id="wonly-toggle" style="cursor:pointer;color:var(--dim);font-weight:700;" title="show ONLY the wave bots (variants + W_neural)">W-ONLY ▪</span>
+    <span class="seg" id="nnonly-toggle" style="cursor:pointer;color:var(--dim);font-weight:700;" title="NN-ONLY: show only the neural-net bots (W_neural + W_neural_nobox) as readiness cards">NN ▪</span>
+    <span class="seg" id="strategy-toggle" style="cursor:pointer;color:var(--dim);font-weight:700;" title="show/hide the STRATEGY STATUS panel (bottom-right)">STRATEGY ▪</span>
+    <span class="seg" id="themebtn" style="cursor:pointer;" title="toggle night mode">◐ <span id="theme-label">NIGHT</span></span>
+    <span class="seg" id="fsbtn" style="cursor:pointer;" title="full screen (F11)">⛶ FULL</span>
+  </div>
+  <div class="body">
+    <div class="tabbar" style="display:flex;gap:2px;margin-bottom:10px;">
+      <span class="tab" data-view="main" style="padding:5px 16px;cursor:pointer;border:1px solid var(--border);background:#0a0e0a;font-weight:700;color:var(--amber);border-bottom:2px solid var(--amber);">EVOLUTION</span>
+      <span class="tab" data-view="live" style="padding:5px 16px;cursor:pointer;border:1px solid var(--border);background:#050805;font-weight:700;color:var(--dim);border-bottom:2px solid transparent;">PAPER vs LIVE&nbsp;&#128181;</span>
+      <span class="tab" data-view="training" style="padding:5px 16px;cursor:pointer;border:1px solid var(--border);background:#050805;font-weight:700;color:var(--dim);border-bottom:2px solid transparent;">TRAINING DATA&nbsp;&#128202;</span>
+      <span class="tab" data-view="backtest" style="padding:5px 16px;cursor:pointer;border:1px solid var(--border);background:#050805;font-weight:700;color:var(--dim);border-bottom:2px solid transparent;">BACKTEST&nbsp;&#128202;</span>
+      <span class="tab" data-view="analysis" style="padding:5px 16px;cursor:pointer;border:1px solid var(--border);background:#050805;font-weight:700;color:var(--dim);border-bottom:2px solid transparent;">WINDOW ANALYSIS&nbsp;&#128300;</span>
+    </div>
+    <div id="view-main">
+    <!-- NN-ONLY card grid (hidden unless NN-ONLY mode is on); cards = W_neural + W_neural_nobox -->
+    <div id="nn-cards" style="display:none;flex-wrap:wrap;gap:14px;padding:8px;"></div>
+    <!-- MAIN LIVE WINDOW chart: marked keep-in-nn (NOT hide-in-nn) so it stays VISIBLE in NN-only mode,
+         shown alongside #nn-cards. The render gate explicitly keeps drawing it in NN-only mode. -->
+    <div class="row keep-in-nn" id="main-window-row">
+      <div class="panel grow amber">
+        <div class="phead">LIVE WINDOW <span class="sub" id="live-elapsed"></span></div>
+        <div class="bignums">
+          <div class="bn"><div class="bnval" id="m-btc">—</div><div class="bnlbl">BTC</div></div>
+          <div class="bn"><div class="bnval sm" id="m-fair">—</div><div class="bnlbl">FAIR</div></div>
+          <div class="bn"><div class="bnval sm" id="m-mid">—</div><div class="bnlbl">QUOTE MID</div></div>
+          <div class="bn"><div class="bnval sm" id="m-dev">—</div><div class="bnlbl">DEVIATION</div></div>
+          <div class="bn"><div class="bnval sm dim" id="m-predacc">—</div><div class="bnlbl">PRED ACC ▦ (this win)</div></div>
+          <div class="bn"><div class="bnval sm dim" id="m-magacc">—</div><div class="bnlbl">MAG ACC ▦ ($right/$wrong)</div></div>
+          <div class="bn"><div class="bnval sm" id="m-capital">—</div><div class="bnlbl" id="m-capital-lbl">$ IN CONTRACTS</div></div>
+          <div class="bn"><div style="display:flex;align-items:center;gap:8px;">
+            <svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="var(--border)" stroke-width="3"/><circle id="cd-ring" cx="16" cy="16" r="13" fill="none" stroke="var(--hot)" stroke-width="3" stroke-linecap="round" stroke-dasharray="81.7" stroke-dashoffset="81.7" transform="rotate(-90 16 16)"/></svg>
+            <div class="countdown" id="m-cd">—</div>
+          </div><div class="bnlbl">T-MINUS</div></div>
+        </div>
+        <div class="gaugekey" style="margin:4px 0 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span id="chart-fs" style="cursor:pointer;color:var(--cyan);font-weight:700;">⛶ full</span>
+          <span id="chart-sig" style="cursor:pointer;color:var(--cyan);font-weight:700;">▦ big moves</span>
+          <span id="chart-streams" style="cursor:pointer;color:var(--amber);font-weight:700;" title="overlay data streams (BTC book, order-flow, perp, texture, deribit, BRTI…) on the chart">📈 streams</span>
+          <span id="chart-label" style="cursor:pointer;color:var(--dim);font-weight:700;">📦 label</span>
+          <label style="cursor:pointer;color:var(--dim);"><input type="checkbox" id="feed-bot" checked style="vertical-align:middle;"> feed→[N]</label>
+          <span id="chart-reset" style="cursor:pointer;color:var(--dim);">↺ reset</span>
+          <span id="chart-info" style="cursor:pointer;color:var(--cyan);font-weight:700;">ℹ legend</span> <span class="dim">|</span> <span id="hist-prev" style="cursor:pointer;color:var(--cyan);font-weight:700;" title="older window">⏪</span> <span id="hist-live" style="cursor:pointer;color:var(--up);font-weight:700;" title="back to live">LIVE</span> <span id="hist-next" style="cursor:pointer;color:var(--cyan);font-weight:700;" title="newer window">⏩</span> <span id="hist-label" style="font-weight:700;color:var(--up);">● LIVE</span>
+          <span class="dim" style="font-size:10px;">X buy-box · C no-trade · ↑buy ↓sell · Del undo/exclude · scroll zoom · drag pan</span>
+        </div>
+        <div id="chart-legend" style="display:none;font-size:10px;color:var(--dim);line-height:1.7;margin:0 0 6px;">
+          <b class="amber">━</b> market mid &nbsp; <b class="cyan">━</b> fair (model) &nbsp; <b style="color:#d070d0">━</b> red−mid gap (peak/⅓s) &nbsp; <b style="color:#ff5fa2">━</b> mkt−fair dev (peak/⅓s) &nbsp; <b style="color:#ff3b3b">━</b> predicted (~0.5s ahead) &nbsp; <b style="color:#3ec46d">▦</b>/<b style="color:#ff5555">▦</b> red led mid right/wrong &nbsp;·&nbsp; ↕ YES prob · linear 0→15min · ▲ trades (click) &nbsp;·&nbsp; <b style="color:#ffd600">▦</b> buy-box <b style="color:#ff5555">▦</b> no-trade <b style="color:#3ec46d">▦</b> your live trade · click × to delete a box</div>
+        <div style="display:flex;gap:8px;align-items:stretch;">
+          <svg id="vtrace" viewBox="0 0 900 340" preserveAspectRatio="none" style="flex:1;min-width:0;height:340px;background:#070b07;border:1px solid var(--border);display:block;"></svg>
+          <div style="flex:0 0 66px;display:flex;flex-direction:column;align-items:center;">
+            <svg id="strikebar" viewBox="0 0 66 340" preserveAspectRatio="none" style="width:66px;height:340px;background:#070b07;border:1px solid var(--border);display:block;"></svg>
+            <div class="bnlbl" style="text-align:center;margin-top:3px;line-height:1.2;">BTC vs<br>STRIKE</div>
+          </div>
+        </div>
+        <div id="tradesbox" style="display:flex;gap:12px;margin-top:10px;align-items:stretch;height:260px;min-height:120px;max-height:82vh;resize:vertical;overflow:hidden;border-bottom:3px solid var(--border);padding-bottom:5px;">
+          <div id="wroi-col" style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div class="phead">BOT ROI · THIS WINDOW <span class="sub" id="wroi-sub"></span></div>
+            <div style="flex:1;overflow:auto;min-height:0;">
+              <table class="sig"><thead><tr><th>#</th><th>BOT</th><th class="r">WIN ROI</th><th class="r">TOTAL</th></tr></thead>
+              <tbody id="wroi-tbody"></tbody></table>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div class="phead">OPEN <span class="sub" id="ct-open-sub"></span></div>
+            <div style="flex:1;overflow:auto;min-height:0;">
+              <table class="sig"><thead><tr><th>T</th><th>BOT</th><th class="r">SD</th><th class="r">IN</th><th class="r">NET P/L</th><th class="r">DEP</th></tr></thead>
+              <tbody id="ct-open-tbody"></tbody></table>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div class="phead">SETTLED <span class="sub" id="ct-settled-sub"></span></div>
+            <div style="flex:1;overflow:auto;min-height:0;">
+              <table class="sig"><thead><tr><th>T</th><th>BOT</th><th class="r">SD</th><th class="r">IN</th><th class="r">OUT</th><th class="r">P/L</th></tr></thead>
+              <tbody id="ct-settled-tbody"></tbody></table>
+            </div>
+          </div>
+        </div>
+        <div class="sub" style="text-align:center;color:var(--dim);font-size:10px;margin-top:2px;">↕ drag the bottom edge to resize the trade lists</div>
+      </div>
+    </div>
+
+    <div class="row hide-in-nn" id="roi-row">
+      <div class="panel grow amber">
+        <div class="phead" id="roi-head">ROI OVER TIME — EVERY BOT <span class="sub" id="eq-sub"></span></div>
+        <svg id="eqchart" viewBox="0 0 900 300" preserveAspectRatio="none" style="width:100%;height:300px;background:#070b07;border:1px solid var(--border);display:block;"></svg>
+        <div class="gaugekey" style="margin-top:5px;">each line = one bot's ROI from its birth · <b class="up">green</b> winning · <b class="down">red</b> losing · brightness ∝ |ROI| · white = current leader · x = window #</div>
+      </div>
+    </div>
+
+    <div class="row hide-in-nn">
+      <div class="panel grow" style="border-top-color:var(--hot);">
+        <div class="phead">BOTS BY FAMILY <span class="sub" id="lb-sub"></span></div>
+        <!-- NEW: TOP-3 row + family-grouped cards (each bot shows stats + an inline P&L sparkline) -->
+        <div id="bot-cards"></div>
+        <!-- legacy flat table kept in the DOM (hidden) so its render + click handler stay data-loss-safe;
+             the cards above are now the primary leaderboard view. -->
+        <table class="sig" style="display:none;">
+          <thead><tr><th>#</th><th>BOT</th><th>STRAT</th><th>PARAMS</th><th class="r">ROI</th><th class="r">ROI/HR</th><th class="r">NET WORTH</th><th class="r">MAX $OUT</th><th class="r">TRADES</th><th class="r">WIN%</th><th class="r">POS-W%</th><th class="r">GEN</th><th class="r">BORN</th></tr></thead>
+          <tbody id="lb"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- CREEP BREADTH-vs-LUCK diagnostics: is the creep fleet real breadth or one correlated momentum bet? -->
+    <div class="row hide-in-nn">
+      <div class="panel grow" style="border-top-color:#5fe0a0;">
+        <div class="phead"><span style="color:#5fe0a0;">CREEP BREADTH ⁄ LUCK DIAGNOSTICS</span> <span class="sub">is "14/18 positive" real breadth, or 1 correlated favorite-bet?</span></div>
+        <div id="creep-diag"></div>
+      </div>
+    </div>
+    </div><!-- /view-main -->
+    <div id="view-training" style="display:none;">
+      <div class="row"><div class="panel grow amber">
+        <div class="phead">TRAINING DATA — your labels &amp; trades <span class="sub" id="td-sub"></span></div>
+        <div class="dim" style="font-size:11px;margin-bottom:6px;">&#128993; buy-box (snap you'd take) &middot; &#128308; no-trade zone &middot; &#128994; your real trade &nbsp;|&nbsp; click a row to highlight it on the chart &middot; TRAIN &#10003;/&#10007; toggles use for [G] &middot; &times; deletes (trades stay in [N] ROI; use &#10007; to just exclude from training)</div>
+        <div style="max-height:580px;overflow:auto;">
+          <table class="sig"><thead><tr><th>WHEN</th><th>TYPE</th><th>SIDE</th><th class="r">DETAIL</th><th class="r">P&amp;L</th><th>TRAIN</th><th>DEL</th></tr></thead>
+          <tbody id="td-tbody"></tbody></table>
+        </div>
+      </div></div>
+    </div><!-- /view-training -->
+
+    <div id="view-live" style="display:none;">
+      <div class="row">
+        <div class="panel grow" style="border-top-color:#3ec46d;">
+          <div class="phead">PAPER vs LIVE — live bot vs its paper twin <span class="sub" id="pl-sub"></span></div>
+          <div class="bignums">
+            <div class="bn"><div class="bnval" id="pl-real">—</div><div class="bnlbl">REAL P&amp;L ($)</div></div>
+            <div class="bn"><div class="bnval sm" id="pl-paper">—</div><div class="bnlbl">PAPER P&amp;L ($)</div></div>
+            <div class="bn"><div class="bnval sm" id="pl-slip">—</div><div class="bnlbl">GAP (real−paper)</div></div>
+            <div class="bn"><div class="bnval sm" id="pl-n">—</div><div class="bnlbl">ROUND-TRIPS</div></div>
+            <div class="bn"><div class="bnval sm" id="pl-deployed">—</div><div class="bnlbl">SKIPPED (price ran)</div></div>
+            <div class="bn"><div class="bnval sm" id="pl-mode">—</div><div class="bnlbl">MODE</div></div>
+          </div>
+          <div class="gaugekey" style="margin:4px 0 6px;"><b class="cyan">&#9473;</b> paper cumulative P&amp;L &nbsp; <b class="up">&#9473;</b> real (live) cumulative P&amp;L &nbsp;&middot;&nbsp; the gap = slippage + fill reality + fees</div>
+          <svg id="pltrace" viewBox="0 0 900 320" preserveAspectRatio="none" style="width:100%;height:320px;background:#070b07;border:1px solid var(--border);display:block;"></svg>
+          <div class="phead" style="margin-top:10px;">ROUND-TRIPS — paper vs real <span class="sub" id="pl-tsub"></span></div>
+          <div style="max-height:320px;overflow:auto;">
+            <table class="sig"><thead><tr><th>BOT</th><th class="r">PAPER IN</th><th class="r">REAL IN</th><th class="r">PAPER OUT</th><th class="r">REAL OUT(NO)</th><th class="r">PAPER P/L</th><th class="r">REAL P/L</th><th class="r">Δ</th></tr></thead>
+            <tbody id="pl-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-backtest" style="display:none;">
+      <div class="row"><div class="panel grow amber">
+        <div class="phead">BACKTEST — replay &amp; label windows
+          <span class="sub">
+            <span id="bt-prev" style="cursor:pointer;color:var(--cyan);font-weight:700;">&#9194; prev</span>
+            <span id="bt-wlabel" style="color:var(--amber);font-weight:700;margin:0 6px;">window —/—</span>
+            <span id="bt-next" style="cursor:pointer;color:var(--cyan);font-weight:700;">next &#9193;</span>
+            <span class="dim" style="margin-left:8px;">&larr;/&rarr; arrows navigate</span>
+          </span>
+        </div>
+        <div id="bt-summary" class="gaugekey" style="margin:2px 0 8px;">—</div>
+
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;font-size:11px;background:#070b07;border:1px solid var(--border);padding:6px 8px;">
+          <span class="cyan" style="font-weight:700;">+ LINE:</span>
+          <select id="bt-stream" style="background:#0a0e0a;color:var(--text);border:1px solid var(--border);font-family:inherit;font-size:11px;padding:2px 4px;">
+            <option value="mid">mid</option><option value="fair">fair</option><option value="cfmean">cfmean</option>
+            <option value="tfi">tfi</option><option value="btcobi">btcobi</option><option value="tvol">tvol</option>
+            <option value="mrate">mrate</option><option value="dev">dev</option>
+          </select>
+          <select id="bt-transform" style="background:#0a0e0a;color:var(--text);border:1px solid var(--border);font-family:inherit;font-size:11px;padding:2px 4px;">
+            <option value="raw">raw</option><option value="MA">MA</option><option value="deriv">deriv</option><option value="integral">integral</option>
+          </select>
+          <label class="dim">MA win(s) <input id="bt-param" type="number" value="30" min="1" step="1" style="width:54px;background:#0a0e0a;color:var(--text);border:1px solid var(--border);font-family:inherit;font-size:11px;padding:2px 4px;"></label>
+          <span id="bt-add" style="cursor:pointer;color:var(--amber);font-weight:700;border:1px solid var(--amber);padding:1px 8px;" title="MA starts at 1.0s by default (skips the opening tick)">add</span>
+          <span id="bt-add-mawave" style="cursor:pointer;color:#3ec46d;font-weight:700;border:1px solid #3ec46d;padding:1px 8px;opacity:0.35;pointer-events:none;" title="add an MA line that begins accumulating at the selected wave box's start (t0)">+ MA from wave start</span>
+          <span class="dim">|</span>
+          <span id="bt-wave" style="cursor:pointer;color:var(--dim);font-weight:700;border:1px solid var(--border);padding:1px 8px;" title="drag to label a STABLE/UNSTABLE wave region">&#9998; Label waves</span>
+          <span id="bt-oracle" style="cursor:pointer;color:var(--dim);font-weight:700;border:1px solid var(--border);padding:1px 8px;" title="drag to mark an oracle exit-price box (avg mid)">&#9678; Oracle boxes</span>
+          <span class="dim">|</span>
+          <span id="bt-flip" style="cursor:pointer;color:#4fd0e0;font-weight:700;border:1px solid var(--border);padding:1px 8px;" title="flip selected wave box stable&harr;unstable (S / U)">&#8644; flip label</span>
+          <span id="bt-delete" style="cursor:pointer;color:var(--down);font-weight:700;border:1px solid var(--border);padding:1px 8px;" title="delete selected box (Del / Backspace)">&#128465; delete</span>
+          <span class="dim">|</span>
+          <span id="bt-fit" style="cursor:pointer;color:#7cc8ff;font-weight:700;border:1px solid var(--border);padding:1px 8px;" title="reset zoom/pan — fit chart to the full window (scroll to zoom · drag to pan)">&#8634; fit</span>
+          <span class="dim">|</span>
+          <span id="bt-undo" style="cursor:pointer;color:var(--amber);font-weight:700;border:1px solid var(--border);padding:1px 8px;opacity:0.35;pointer-events:none;" title="undo (Ctrl+Z)">&#8630; undo</span>
+          <span id="bt-redo" style="cursor:pointer;color:var(--amber);font-weight:700;border:1px solid var(--border);padding:1px 8px;opacity:0.35;pointer-events:none;" title="redo (Ctrl+Shift+Z / Ctrl+Y)">&#8631; redo</span>
+        </div>
+        <div id="bt-selinfo" class="gaugekey" style="margin:0 0 6px;"><span class="dim">no box selected — click a box to select &middot; drag body to move &middot; drag edges to resize</span></div>
+        <div id="bt-lines" style="font-size:11px;margin-bottom:6px;line-height:1.9;"></div>
+
+        <svg id="bt-chart" viewBox="0 0 900 340" preserveAspectRatio="none" style="width:100%;height:380px;background:#070b07;border:1px solid var(--border);display:block;"></svg>
+        <div id="bt-pop" style="display:none;position:fixed;z-index:9999;background:rgba(8,12,8,0.97);border:1px solid var(--amber);padding:8px 10px;font-size:12px;color:var(--text);"></div>
+      </div></div>
+    </div><!-- /view-backtest -->
+
+    <div id="view-analysis" style="display:none;">
+      <style>
+        #view-analysis .an-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#070b07;border:1px solid var(--border);padding:6px 10px;font-size:11px;margin-bottom:8px;}
+        #view-analysis .an-bar label{color:var(--dim);display:flex;align-items:center;gap:3px;}
+        #view-analysis input,#view-analysis select{background:#0a0e0a;color:var(--text);border:1px solid var(--border);font-family:inherit;font-size:11px;padding:2px 4px;}
+        #view-analysis input[type=text]{width:96px;}
+        #view-analysis .an-btn{cursor:pointer;color:var(--amber);font-weight:700;border:1px solid var(--amber);padding:1px 9px;user-select:none;}
+        #view-analysis .an-btn.sub{color:var(--cyan);border-color:var(--border);}
+        #view-analysis .an-subtabs{display:flex;gap:2px;margin-bottom:8px;}
+        #view-analysis .an-subtab{padding:4px 14px;cursor:pointer;border:1px solid var(--border);background:#050805;font-weight:700;color:var(--dim);font-size:11px;}
+        #view-analysis .an-subtab.on{color:var(--amber);background:#0a0e0a;border-bottom:2px solid var(--amber);}
+        #view-analysis .an-pane{min-height:200px;}
+        #view-analysis canvas{background:#070b07;border:1px solid var(--border);display:block;width:100%;}
+        #view-analysis .an-ctrls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:11px;}
+        #view-analysis input[type=range]{vertical-align:middle;accent-color:var(--amber);height:14px;}
+        #view-analysis .lag-lbl{font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;min-width:78px;display:inline-block;}
+        #view-analysis .lm-cap{font-size:10px;color:var(--dim);line-height:1.5;margin:4px 0 6px;}
+        #view-analysis .lm-mode{cursor:pointer;color:var(--cyan);font-weight:700;border:1px solid var(--border);padding:1px 9px;user-select:none;}
+        #view-analysis .lm-mode.on{color:var(--amber);border-color:var(--amber);}
+        #view-analysis table.sig td,#view-analysis table.sig th{white-space:nowrap;}
+        #view-analysis .an-rout{margin-top:8px;background:#070b07;border:1px solid var(--amber);padding:8px 10px;font-size:11px;max-height:340px;overflow:auto;}
+        #view-analysis .an-rout table.sig{width:auto;}
+        #view-analysis .an-rout table.sig td,#view-analysis .an-rout table.sig th{padding:1px 8px;}
+        #an-tooltip{position:fixed;z-index:9999;display:none;background:rgba(8,12,8,0.97);border:1px solid var(--amber);padding:5px 8px;font-size:11px;color:var(--text);pointer-events:none;line-height:1.5;}
+        #view-analysis .mm-subset{display:flex;gap:16px;flex-wrap:wrap;background:#070b07;border:1px solid var(--border);padding:6px 10px;margin-bottom:6px;font-size:10px;}
+        #view-analysis .mm-subset .grp{display:flex;flex-direction:column;gap:2px;}
+        #view-analysis .mm-subset .grp b{color:var(--cyan);font-size:10px;margin-bottom:2px;}
+        #view-analysis .mm-subset label{display:inline-flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;}
+        #view-analysis .mm-subset input[type=checkbox]{accent-color:var(--amber);width:12px;height:12px;}
+        #view-analysis .mm-prog{height:12px;background:#0a0e0a;border:1px solid var(--border);position:relative;min-width:220px;flex:1;max-width:420px;display:none;}
+        #view-analysis .mm-prog>i{display:block;height:100%;width:0;background:var(--amber);transition:width .1s linear;}
+        #view-analysis .mm-prog>span{position:absolute;left:6px;top:-1px;font-size:9px;color:var(--text);line-height:12px;}
+        #view-analysis .mm-tog{display:inline-flex;align-items:center;gap:3px;cursor:pointer;color:var(--amber);user-select:none;white-space:nowrap;}
+        #view-analysis .mm-tog input[type=checkbox]{accent-color:var(--amber);width:12px;height:12px;vertical-align:middle;}
+        #view-analysis .mm-legend{background:#070b07;border:1px solid var(--border);padding:4px 8px;margin:2px 0 6px;}
+        #view-analysis .mm-legend b{color:var(--amber);}
+        #view-analysis .mm-canvas-wrap{position:relative;}
+        #view-analysis #mm-canvas{cursor:crosshair;}
+      </style>
+      <div class="row"><div class="panel grow amber">
+        <div class="phead">WINDOW ANALYSIS — full level-analysis over ALL tick history
+          <span class="sub" id="an-engine">engine …</span>
+        </div>
+        <div class="an-bar" id="an-filters">
+          <span class="cyan" style="font-weight:700;">FILTERS</span>
+          <label>date from <input type="text" id="an-f-from" placeholder="YYYY-MM-DD"></label>
+          <label>to <input type="text" id="an-f-to" placeholder="YYYY-MM-DD"></label>
+          <label>secleft <input type="text" id="an-f-slmin" list="dl-secleft" placeholder="min" style="width:56px"> – <input type="text" id="an-f-slmax" list="dl-secleft" placeholder="max" style="width:56px"></label>
+          <label>price <input type="text" id="an-f-pmin" list="dl-price" placeholder="min" style="width:52px"> – <input type="text" id="an-f-pmax" list="dl-price" placeholder="max" style="width:52px"></label>
+          <label>outcome
+            <select id="an-f-outcome"><option value="">any</option><option value="yes">YES</option><option value="no">NO</option></select>
+          </label>
+          <span class="an-btn" id="an-apply">apply</span>
+          <span class="an-btn sub" id="an-clear">clear</span>
+          <span class="dim" id="an-status" style="margin-left:6px;"></span>
+        </div>
+        <datalist id="dl-secleft"><option>0</option><option>60</option><option>120</option><option>300</option><option>450</option><option>600</option><option>900</option></datalist>
+        <datalist id="dl-price"><option>0</option><option>0.05</option><option>0.10</option><option>0.25</option><option>0.50</option><option>0.75</option><option>0.90</option><option>0.95</option><option>1.0</option></datalist>
+        <datalist id="dl-horizon"><option>10</option><option>30</option><option>60</option><option>120</option><option>300</option></datalist>
+        <datalist id="dl-binsec"><option>1</option><option>5</option><option>10</option><option>30</option><option>60</option></datalist>
+        <datalist id="dl-binprice"><option>0.01</option><option>0.05</option><option>0.10</option><option>0.20</option></datalist>
+        <datalist id="dl-lag"><option>10</option><option>30</option><option>60</option><option>120</option><option>300</option></datalist>
+        <datalist id="dl-lagstep"><option>5</option><option>10</option><option>30</option><option>60</option></datalist>
+        <datalist id="dl-megastep"><option>10</option><option>30</option><option>60</option><option>120</option></datalist>
+        <datalist id="dl-megak"><option>50</option><option>100</option><option>250</option><option>500</option><option>1000</option><option>5000</option></datalist>
+        <datalist id="dl-minr"><option>0</option><option>0.02</option><option>0.05</option><option>0.1</option><option>0.2</option><option>0.3</option></datalist>
+        <datalist id="dl-k"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></datalist>
+        <div class="an-subtabs" id="an-subtabs">
+          <span class="an-subtab on" data-sub="presets">PRESETS</span>
+          <span class="an-subtab" data-sub="pivot">PIVOT BUILDER</span>
+          <span class="an-subtab" data-sub="corr">CORRELATION</span>
+          <span class="an-subtab" data-sub="lagmatrix">LAG MATRIX</span>
+          <span class="an-subtab" data-sub="megamatrix">MEGA MATRIX</span>
+          <span class="an-subtab" data-sub="windows">WINDOW BROWSER</span>
+          <span class="an-subtab" data-sub="dist">DISTRIBUTIONS</span>
+        </div>
+        <div class="an-pane" id="an-pane-presets"></div>
+        <div class="an-pane" id="an-pane-pivot" style="display:none;"></div>
+        <div class="an-pane" id="an-pane-corr" style="display:none;"></div>
+        <div class="an-pane" id="an-pane-lagmatrix" style="display:none;"></div>
+        <div class="an-pane" id="an-pane-megamatrix" style="display:none;"></div>
+        <div class="an-pane" id="an-pane-windows" style="display:none;"></div>
+        <div class="an-pane" id="an-pane-dist" style="display:none;"></div>
+      </div></div>
+    </div><!-- /view-analysis -->
+    <div id="an-tooltip"></div>
+  </div>
+</div>
+<script src="renderer.js"></script>
+</body>
+</html>

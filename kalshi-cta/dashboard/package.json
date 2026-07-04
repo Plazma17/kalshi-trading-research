@@ -1,0 +1,30 @@
+{
+  "name": "cta-dashboard",
+  "productName": "CTA Dashboard",
+  "version": "1.0.0",
+  "description": "Live dashboard for the KXBTC15M CTA paper-trading bot",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "build": {
+    "appId": "com.noah.cta-dashboard",
+    "productName": "CTA Dashboard",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!*.log"
+    ],
+    "win": {
+      "target": "dir",
+      "icon": "icon.ico"
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  }
+}

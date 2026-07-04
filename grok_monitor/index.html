@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GROK MONITOR</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#111722; --line:#1f2733; --fg:#c9d1d9; --dim:#7d8590;
+    --grn:#3fb950; --red:#f85149; --blu:#58a6ff; --org:#d29922; --mag:#bc8cff;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:Consolas,"Cascadia Mono","Courier New",monospace;font-size:12px;}
+  #wrap{display:flex;flex-direction:column;height:100vh;}
+  .hdr{background:#0a0e14;border-bottom:1px solid var(--line);padding:5px 8px;
+    display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;}
+  .hdr .title{color:var(--blu);font-weight:bold;letter-spacing:1px;margin-right:8px;}
+  .kv{white-space:nowrap;}
+  .kv b{color:var(--fg);} .kv span{color:var(--dim);}
+  .modeA{color:var(--grn);} .modeB{color:var(--mag);}
+  .grok{color:#000;background:var(--org);padding:0 5px;border-radius:2px;font-weight:bold;
+    animation:pulse 1s infinite;}
+  @keyframes pulse{50%{opacity:.55;}}
+  .baselines{background:var(--panel);border-bottom:1px solid var(--line);
+    padding:4px 8px;display:flex;gap:18px;flex-wrap:wrap;}
+  .baselines .b{color:var(--dim);} .baselines .b b{color:var(--org);}
+  .baselines .b.beat b{color:var(--grn);} .baselines .b.lose b{color:var(--red);}
+  #charts{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;padding:4px 6px;gap:4px;}
+  .chartbox{flex:1 1 0;background:#0a0e14;border:1px solid var(--line);position:relative;min-height:0;}
+  .chartbox canvas{width:100%;height:100%;display:block;}
+  .clabel{position:absolute;top:3px;left:6px;color:var(--dim);font-size:11px;pointer-events:none;}
+  .legend{position:absolute;top:3px;right:6px;font-size:11px;pointer-events:none;}
+  .legend .tr{color:var(--blu);} .legend .ho{color:var(--org);}
+  .ctl{display:flex;align-items:center;gap:10px;padding:2px 8px;background:#0a0e14;
+    border-bottom:1px solid var(--line);color:var(--dim);}
+  .ctl label{cursor:pointer;user-select:none;}
+  #logpanel{height:190px;background:#080b10;border-top:1px solid var(--line);
+    overflow:auto;padding:4px 8px;white-space:pre;color:#9aa7b3;font-size:11px;line-height:1.35;}
+  #logpanel .lh{color:var(--dim);}
+  #srcline{color:var(--dim);padding:2px 8px;background:#0a0e14;border-top:1px solid var(--line);
+    font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .warn{color:var(--org);}
+
+  /* ---------- 4x4 GRID CONSOLE ---------- */
+  #gridwrap{display:none;flex-direction:column;height:100vh;}
+  .ghdr{background:#0a0e14;border-bottom:1px solid var(--line);padding:5px 8px;
+    display:flex;gap:14px;align-items:center;}
+  .ghdr .title{color:var(--blu);font-weight:bold;letter-spacing:1px;}
+  .ghdr .hint{color:var(--dim);}
+  .ghdr .cnt b{color:var(--fg);}
+  #grid{flex:1 1 auto;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;
+    gap:5px;padding:6px;min-height:0;overflow:auto;}
+  .card{background:#0a0e14;border:1px solid var(--line);border-radius:3px;display:flex;
+    flex-direction:column;min-height:0;overflow:hidden;cursor:pointer;position:relative;}
+  .card:hover{border-color:#30435c;}
+  .card.run{border-left:3px solid var(--grn);}
+  .card.queue{border-left:3px solid var(--dim);opacity:.72;}
+  .card.done{border-left:3px solid var(--blu);}
+  .card.grokd{box-shadow:0 0 0 1px var(--org) inset;}
+  .card .chd{display:flex;justify-content:space-between;align-items:center;
+    padding:2px 6px;border-bottom:1px solid var(--line);font-size:11px;}
+  .card .cname{color:var(--fg);font-weight:bold;letter-spacing:.5px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;}
+  .badge{font-size:9px;padding:0 5px;border-radius:2px;font-weight:bold;white-space:nowrap;margin-left:4px;}
+  .badge.RUNNING{background:var(--grn);color:#04140a;}
+  .badge.DONE{background:#20344a;color:var(--blu);}
+  .badge.QUEUED{background:#161c26;color:var(--dim);border:1px solid var(--line);}
+  @keyframes cpulse{50%{opacity:.5;}}
+  .card .cchart{flex:1 1 auto;position:relative;min-height:34px;}
+  .card .cchart canvas{width:100%;height:100%;display:block;}
+  .card .cmeta{position:absolute;top:2px;left:5px;font-size:9px;color:#5c6672;pointer-events:none;}
+  .card .qnote{padding:6px;color:var(--dim);font-size:10px;line-height:1.35;flex:1 1 auto;overflow:hidden;}
+  .card .crows{border-top:1px solid var(--line);font-size:10px;color:#8b98a5;
+    padding:2px 4px;line-height:1.3;white-space:pre;font-family:inherit;min-height:0;}
+  .card .crows .rhd{color:#5c6672;}
+  .card .crows .rho{color:var(--org);} .card .crows .rtr{color:var(--blu);}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="hdr" id="hdr">
+    <span class="title">GROK MONITOR</span>
+    <span class="kv"><span>mode</span> <b id="h_mode">–</b></span>
+    <span class="kv"><span>epoch</span> <b id="h_epoch">–</b></span>
+    <span class="kv"><span>samp/s</span> <b id="h_sps">–</b></span>
+    <span class="kv"><span>elapsed</span> <b id="h_elapsed">–</b></span>
+    <span class="kv"><span>ckpt</span> <b id="h_ckpt">–</b></span>
+    <span class="kv"><span>lr</span> <b id="h_lr">–</b></span>
+    <span class="kv"><span>wd</span> <b id="h_wd">–</b></span>
+    <span class="kv"><span>dev</span> <b id="h_dev">–</b></span>
+    <span class="kv"><span>params</span> <b id="h_params">–</b></span>
+    <span class="kv" id="h_grokwrap" style="display:none"><span class="grok" id="h_grok">GROK?</span></span>
+  </div>
+
+  <div class="baselines" id="baselines">
+    <span class="b" id="b_nochg"><span>no-change MAE</span> <b>–</b></span>
+    <span class="b" id="b_lin"><span>linear-probe</span> <b>–</b></span>
+    <span class="b" id="b_net"><span>net holdout</span> <b>–</b></span>
+  </div>
+
+  <div class="ctl">
+    <label><input type="checkbox" id="logx"> log-x (grokking long-run)</label>
+    <span id="npts" class="warn"></span>
+  </div>
+
+  <div id="charts">
+    <div class="chartbox">
+      <div class="clabel">LOSS — train vs holdout</div>
+      <div class="legend"><span class="tr">■ train</span> <span class="ho">■ holdout</span></div>
+      <canvas id="cLoss"></canvas>
+    </div>
+    <div class="chartbox">
+      <div class="clabel">DIRECTION ACCURACY / AUC — train vs holdout</div>
+      <div class="legend"><span class="tr">■ train</span> <span class="ho">■ holdout</span></div>
+      <canvas id="cAcc"></canvas>
+    </div>
+  </div>
+
+  <div id="srcline">source: initializing…</div>
+  <div id="logpanel"><span class="lh">waiting for training data…</span></div>
+</div>
+
+<div id="gridwrap">
+  <div class="ghdr">
+    <span class="title">GROK FARM — 4×4</span>
+    <span class="hint">[G] grid ↔ single · click a card to open it</span>
+    <span class="cnt kv"><span style="color:var(--dim)">runs</span> <b id="g_cnt">–</b></span>
+    <span class="cnt kv"><span style="color:var(--grn)">▶ running</span> <b id="g_run">0</b></span>
+    <span class="cnt kv"><span style="color:var(--dim)">◷ queued</span> <b id="g_q">0</b></span>
+    <span class="cnt kv" id="g_grokwrap" style="display:none"><span class="grok">GROK ↑ <b id="g_grok"></b></span></span>
+  </div>
+  <div id="grid"></div>
+</div>
+
+<script>
+const fs = require('fs');
+const path = require('path');
+// grok training dir lives beside this monitor dir.
+const GROK_DIR = path.resolve(__dirname, '..', 'grok');
+
+// ---------- tolerant key aliasing ----------
+const ALIAS = {
+  epoch:      ['epoch','ep','step','iter','iteration'],
+  train_loss: ['train_loss','tr_loss','trainloss','loss_train','loss'],
+  val_loss:   ['val_loss','holdout_loss','test_loss','valloss','loss_val','loss_holdout'],
+  train_acc:  ['train_acc','tr_acc','train_auc','tr_auc','trainacc','acc_train','auc_train','train_dir_acc'],
+  val_acc:    ['val_acc','holdout_acc','test_acc','val_auc','test_auc','holdout_auc','valacc','acc_val','auc_val','holdout_dir_acc'],
+};
+const STATUS_ALIAS = {
+  mode:   ['mode','ab','run','variant'],
+  lr:     ['lr','learning_rate','eta'],
+  wd:     ['wd','weight_decay','weightdecay','l2'],
+  device: ['device','dev'],
+  params: ['params','param_count','n_params','nparams'],
+  sps:    ['samples_per_sec','samples_sec','sps','samp_s','throughput'],
+  elapsed:['elapsed','elapsed_s','elapsed_sec','runtime','wall_s'],
+  ckpt:   ['last_checkpoint','checkpoint_time','ckpt_time','last_ckpt'],
+  nochg:  ['no_change_mae','nochange_mae','baseline_mae','nochg_mae','naive_mae'],
+  lin:    ['linear_probe','linear_probe_auc','linprobe','linear_probe_acc','lin_auc','lin_acc'],
+};
+function pick(obj, names){
+  for(const n of names){ if(obj[n]!==undefined && obj[n]!==null) return obj[n]; }
+  return undefined;
+}
+function normRec(o){
+  const r={};
+  for(const k in ALIAS){ const v=pick(o,ALIAS[k]); if(v!==undefined && typeof v==='number') r[k]=v; }
+  return r;
+}
+
+// ---------- source discovery + reading ----------
+let lastSourceDesc = 'waiting for training data…';
+let selectedRun=null, availableRuns=[];
+let viewMode=null; // 'grid' | 'single' ; null => auto-decide on first refresh
+window.addEventListener('keydown',(e)=>{
+  const k=(e.key||'').toUpperCase();
+  if(k==='G'){ viewMode = (viewMode==='grid')?'single':'grid'; refresh(); return; }
+  if(availableRuns.includes(k)){ selectedRun=k; lastGood=null; viewMode='single'; refresh(); return; }
+  // letter key cycles through runs sharing that prefix (C -> C1 -> C2 -> C1 ...)
+  const fam=availableRuns.filter(r=>r.startsWith(k));
+  if(fam.length){ const i=fam.indexOf(selectedRun); selectedRun=fam[(i+1)%fam.length]; lastGood=null; viewMode='single'; refresh(); }
+});
+let lastLogFile = null;
+
+function safeList(){
+  try { return fs.readdirSync(GROK_DIR); } catch(e){ return null; }
+}
+function readJSON(fp){ try { return JSON.parse(fs.readFileSync(fp,'utf8')); } catch(e){ return null; } }
+
+// the REAL grok_train.py contract (2026-07-03): one JSON object per run file with a
+// nested `curves` array; per-record keys tloss / mae_tr|mae_ho / nc_tr|nc_ho / edge_* /
+// diracc_tr|diracc_ho are per-horizon ARRAYS [60s,120s,240s] — we display horizon HIX.
+const HIX = 1; // 120s horizon
+const hsel = (v)=> (Array.isArray(v) ? v[Math.min(HIX, v.length-1)] : (typeof v==='number'? v : undefined));
+function recsFromCurves(j){
+  if(!j || !Array.isArray(j.curves)) return [];
+  return j.curves.map(c=>({
+    epoch:      c.epoch,
+    train_loss: (typeof c.tloss==='number'? c.tloss : hsel(c.mae_tr)),
+    val_loss:   hsel(c.mae_ho),
+    train_acc:  hsel(c.diracc_tr),
+    val_acc:    hsel(c.diracc_ho),
+    nochg:      hsel(c.nc_ho),          // no-change baseline MAE (holdout), same horizon
+    edge_ho:    hsel(c.edge_ho),        // net's MAE edge over no-change (+ = beating martingale)
+    settle_ho:  (typeof c.settle_ho==='number'? c.settle_ho : undefined),
+  })).filter(r=>r.epoch!==undefined);
+}
+
+// pull an array of epoch records out of whatever shape a JSON file has
+function recsFromJSON(j){
+  if(!j) return [];
+  const fromCurves=recsFromCurves(j);
+  if(fromCurves.length) return fromCurves;
+  let arr=null;
+  if(Array.isArray(j)) arr=j;
+  else if(Array.isArray(j.history)) arr=j.history;
+  else if(Array.isArray(j.log)) arr=j.log;
+  else if(Array.isArray(j.epochs)) arr=j.epochs;
+  else if(Array.isArray(j.curve)) arr=j.curve;
+  else if(typeof j==='object') arr=[j]; // single snapshot object
+  if(!arr) return [];
+  return arr.map(normRec).filter(r=>r.epoch!==undefined || r.train_loss!==undefined || r.val_loss!==undefined
+                                     || r.train_acc!==undefined || r.val_acc!==undefined);
+}
+function recsFromJSONL(fp){
+  let txt; try{ txt=fs.readFileSync(fp,'utf8'); }catch(e){ return []; }
+  const out=[];
+  for(const line of txt.split(/\r?\n/)){
+    const s=line.trim(); if(!s) continue;
+    try{ const o=JSON.parse(s); const r=normRec(o);
+      if(Object.keys(r).length) out.push(r);
+    }catch(e){/*skip*/}
+  }
+  return out;
+}
+// regex fallback over a .log: grab epoch + any loss/acc numbers
+function recsFromLOG(txt){
+  const out=[];
+  for(const line of txt.split(/\r?\n/)){
+    const em = line.match(/\b(?:epoch|ep|step)\D{0,3}(\d+)/i);
+    if(!em) continue;
+    const r={ epoch: +em[1] };
+    let m;
+    if((m=line.match(/train[_ ]?(?:loss)\D{0,3}([0-9.]+)/i))) r.train_loss=+m[1];
+    if((m=line.match(/(?:val|test|holdout)[_ ]?loss\D{0,3}([0-9.]+)/i))) r.val_loss=+m[1];
+    if((m=line.match(/train[_ ]?(?:auc|acc)\D{0,3}([0-9.]+)/i))) r.train_acc=+m[1];
+    if((m=line.match(/(?:val|test|holdout)[_ ]?(?:auc|acc)\D{0,3}([0-9.]+)/i))) r.val_acc=+m[1];
+    if(Object.keys(r).length>1) out.push(r);
+  }
+  return out;
+}
+
+function collectStatus(files){
+  // merge status-ish fields from progress json / a status/meta file / newest jsonl tail
+  const st={};
+  const merge=(o)=>{ if(!o||typeof o!=='object') return;
+    for(const k in STATUS_ALIAS){ if(st[k]===undefined){ const v=pick(o,STATUS_ALIAS[k]); if(v!==undefined) st[k]=v; } } };
+  for(const f of files){
+    const low=f.toLowerCase();
+    if(low.endsWith('.json') && (low.includes('status')||low.includes('meta')||low.includes('progress')||low.includes('grok'))){
+      const j=readJSON(path.join(GROK_DIR,f));
+      if(j){ merge(j); if(j.meta) merge(j.meta); if(j.status) merge(j.status); if(j.config) merge(j.config);
+             if(Array.isArray(j.history)&&j.history.length) merge(j.history[j.history.length-1]); }
+    }
+  }
+  return st;
+}
+
+function loadAll(){
+  const files=safeList();
+  if(files===null){ lastSourceDesc='grok/ dir not present yet — waiting…'; return {recs:[],st:{},src:'none'}; }
+
+  let recs=[]; let srcParts=[];
+
+  // 1a) run files progress_A.json / progress_B.json are SEPARATE runs — never merge.
+  //     selectedRun picks one (default B = the long grokking run); keys A/B toggle.
+  const runFiles={};
+  for(const f of files){ const m=f.match(/^progress_([A-Za-z0-9_.-]+)\.json$/); if(m) runFiles[m[1]]=f; }
+  if(Object.keys(runFiles).length){
+    if(!selectedRun || !runFiles[selectedRun]){
+      // default to the LIVE run: newest-modified progress file
+      let best=null, bt=-1;
+      for(const k in runFiles){ try{ const t=fs.statSync(path.join(GROK_DIR,runFiles[k])).mtimeMs; if(t>bt){bt=t;best=k;} }catch(e){} }
+      const _ns = best || Object.keys(runFiles).sort()[0];
+      // when the selected run vanishes and we silently repoint, drop the anti-flash cache
+      // so a torn read of the NEW run can't display the OLD run's recs under it.
+      if(_ns!==selectedRun){ selectedRun=_ns; lastGood=null; }
+    }
+    const f=runFiles[selectedRun];
+    const r=recsFromJSON(readJSON(path.join(GROK_DIR,f)));
+    if(r.length){ recs=r; srcParts.push(`run ${selectedRun}: ${f}(${r.length})`); }
+    availableRuns=Object.keys(runFiles).sort();
+  }
+  // 1b) generic: grok_progress.json (or any *progress*.json / grok*.json)
+  if(recs.length===0){
+    const jsonProg = files.filter(f=>/\.json$/i.test(f) && /(progress|grok|history|curve)/i.test(f) && !/^progress_[A-Za-z0-9_.-]+\.json$/.test(f));
+    for(const f of jsonProg){
+      const r=recsFromJSON(readJSON(path.join(GROK_DIR,f)));
+      if(r.length){ recs=recs.concat(r); srcParts.push(f+`(${r.length})`); }
+    }
+  }
+  // 2) jsonl progress
+  if(recs.length===0){
+    const jl=files.filter(f=>/\.jsonl$/i.test(f) && /(progress|grok|history|train|metric)/i.test(f));
+    for(const f of jl){
+      const r=recsFromJSONL(path.join(GROK_DIR,f));
+      if(r.length){ recs=recs.concat(r); srcParts.push(f+`(${r.length})`); }
+    }
+  }
+  // 3) regex over newest .log
+  let logsForTail=files.filter(f=>/\.(log|txt|out)$/i.test(f));
+  if(recs.length===0 && logsForTail.length){
+    // newest log
+    let newest=null, nt=-1;
+    for(const f of logsForTail){ try{ const t=fs.statSync(path.join(GROK_DIR,f)).mtimeMs; if(t>nt){nt=t;newest=f;} }catch(e){} }
+    if(newest){
+      let txt=''; try{ txt=fs.readFileSync(path.join(GROK_DIR,newest),'utf8'); }catch(e){}
+      const r=recsFromLOG(txt);
+      if(r.length){ recs=r; srcParts.push(newest+`(regex ${r.length})`); }
+    }
+  }
+
+  // dedup by epoch (last wins), keep order
+  const byEp=new Map();
+  for(const r of recs){ const key=(r.epoch!==undefined)?r.epoch:('_'+byEp.size); byEp.set(key,{...(byEp.get(key)||{}),...r}); }
+  let merged=[...byEp.values()].sort((a,b)=>(a.epoch??0)-(b.epoch??0));
+
+  const st=collectStatus(files);
+
+  // choose a log file for the raw tail: prefer newest .log/.txt/.out, else the jsonl
+  let tailFile=null, tt=-1;
+  const tailCands=files.filter(f=>/\.(log|txt|out|jsonl)$/i.test(f));
+  for(const f of tailCands){ try{ const t=fs.statSync(path.join(GROK_DIR,f)).mtimeMs; if(t>tt){tt=t;tailFile=f;} }catch(e){} }
+  lastLogFile=tailFile;
+
+  lastSourceDesc = srcParts.length ? ('reading '+srcParts.join(', ')) : 'grok/ present, no recognizable progress yet…';
+  const out={recs:merged, st, src: srcParts.length?'data':'empty'};
+  // anti-flash: the C runs rewrite their progress file several times/sec, so polls
+  // catch torn writes -> parse fails -> empty. Serve the last good load instead.
+  if(merged.length===0 && lastGood && lastGood.recs.length){
+    lastSourceDesc='reading (cached — file mid-write)';
+    return lastGood;
+  }
+  if(merged.length) lastGood=out;
+  return out;
+}
+let lastGood=null;
+let singleStamp='', lastGAcc=null;
+
+// ================= 4x4 GRID CONSOLE =================
+// Per-run cache (extends the single-slot anti-flash pattern: keyed by run id).
+const runCache = {};       // runKey -> {runKey, recs, mtime, meta}
+let gridSig = '';          // id-set signature to avoid needless DOM rebuilds
+const cardEls = {};        // id -> {root, badge, canvas, rows, meta}
+const QFILE = 'experiments_queue.jsonl';
+
+let _lastRunKeys = [];
+function discoverRunKeys(){
+  // grok/ churns hard (runner + benchmarks + atomic temp+replace writes), so a poll can
+  // catch readdirSync mid-write and come back WITHOUT the progress files. Serve the last
+  // non-empty key set on such a torn read so the grid default never regresses to single
+  // and cards don't blink out. (Mirrors the per-run + single-view anti-flash caches.)
+  const files = safeList() || [];
+  const keys = [];
+  for(const f of files){ const m=f.match(/^progress_([A-Za-z0-9_.-]+)\.json$/); if(m) keys.push(m[1]); }
+  if(keys.length){ _lastRunKeys = keys.sort(); return _lastRunKeys; }
+  return _lastRunKeys;
+}
+// load ONE run's recs+meta, anti-flash cached per run
+function loadRun(runKey){
+  const fp = path.join(GROK_DIR, 'progress_'+runKey+'.json');
+  let mtime=0; try{ mtime=fs.statSync(fp).mtimeMs; }catch(e){}
+  const j = readJSON(fp);
+  const recs = j? recsFromJSON(j) : [];
+  const prev = runCache[runKey];
+  if(recs.length===0 && prev && prev.recs.length){        // torn mid-write -> serve cached
+    const out={...prev, mtime: mtime||prev.mtime}; return out;
+  }
+  const meta = j ? {params:j.params, wd:j.wd, mode:j.mode,
+                    baselines:j.baselines||null,
+                    base: (j.nc_ho&&Array.isArray(j.nc_ho))? j.nc_ho[Math.min(HIX,j.nc_ho.length-1)] : undefined}
+                 : (prev? prev.meta:{});
+  const out={runKey, recs, mtime, meta};
+  if(recs.length) runCache[runKey]=out;
+  return out;
+}
+function discoverQueue(){
+  let txt; try{ txt=fs.readFileSync(path.join(GROK_DIR,QFILE),'utf8'); }catch(e){ return []; }
+  const out=[];
+  for(const ln of txt.split(/\r?\n/)){
+    const s=ln.trim(); if(!s) continue;
+    try{ const o=JSON.parse(s);
+      if(o && o.id!==undefined) out.push({id:String(o.id), note:(o.note||o.target||''), done:!!o.done});
+    }catch(e){}
+  }
+  return out;
+}
+
+// tiny dual-curve chart for a card: train faint, holdout bright, baseline hline, grok dot
+function drawMini(canvas, recs){
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth||160, H=canvas.clientHeight||60;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const x0=4,x1=W-4,y0=4,y1=H-4;
+  const pts=recs.filter(r=>r.epoch!==undefined);
+  const A=pts.filter(r=>r.train_acc!==undefined).map(r=>[r.epoch,r.train_acc]);
+  const B=pts.filter(r=>r.val_acc!==undefined).map(r=>[r.epoch,r.val_acc]);
+  if(A.length===0 && B.length===0){ ctx.fillStyle='#5c6672';ctx.font='9px Consolas';ctx.fillText('no acc data',x0+4,(y0+y1)/2); return false; }
+  const all=A.concat(B).map(p=>p[1]);
+  let eps=pts.map(r=>r.epoch); let exMin=Math.min(...eps), exMax=Math.max(...eps);
+  let vMin=Math.min(...all,0.5), vMax=Math.max(...all,0.5);
+  const pad=(vMax-vMin)*0.1||0.02; vMin-=pad; vMax+=pad;
+  const sx=e=>x0+(e-exMin)/((exMax-exMin)||1)*(x1-x0);
+  const sy=v=>y1-(v-vMin)/((vMax-vMin)||1)*(y1-y0);
+  // 0.5 reference
+  if(0.5>=vMin&&0.5<=vMax){ ctx.strokeStyle='#2a2f38';ctx.setLineDash([2,2]);
+    const y5=sy(0.5);ctx.beginPath();ctx.moveTo(x0,y5);ctx.lineTo(x1,y5);ctx.stroke();ctx.setLineDash([]); }
+  const plot=(arr,color,w)=>{ if(!arr.length)return; ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();
+    arr.forEach(([e,v],i)=>{const X=sx(e),Y=sy(v);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.stroke(); };
+  plot(A,'#2f5a86',1);       // train faint
+  plot(B,'#d29922',1.8);     // holdout bright
+  // grok detect (same rule as the big chart)
+  let grok=false;
+  if(B.length>=8){ const bs=B.map(p=>p[1]); const q=Math.max(3,Math.floor(bs.length*0.3));
+    const em=bs.slice(0,q).reduce((a,b)=>a+b,0)/q, lm=bs.slice(-q).reduce((a,b)=>a+b,0)/q;
+    if(em<0.55 && (lm-em)>0.06 && lm>0.57){ grok=true;
+      let bi=Math.floor(bs.length/2),best=0;
+      for(let i=Math.floor(bs.length/2);i<bs.length;i++){const d=(bs[i]-bs[i-1])||0;if(d>best){best=d;bi=i;}}
+      const [ge,gv]=B[bi];ctx.fillStyle='#d29922';ctx.beginPath();ctx.arc(sx(ge),sy(gv),2.5,0,7);ctx.fill(); }
+  }
+  return grok;
+}
+
+function rowsHTML(recs){
+  const last=recs.slice(-5);
+  if(!last.length) return '<span class="rhd">no rows</span>';
+  let s='<span class="rhd">ep    ho    tr</span>\n';
+  s+=last.map(r=>{
+    const ep=(r.epoch>=1000)?(r.epoch/1000).toFixed(0)+'k':String(r.epoch);
+    const ho=(typeof r.val_acc==='number')?r.val_acc.toFixed(3):' -- ';
+    const tr=(typeof r.train_acc==='number')?r.train_acc.toFixed(3):' -- ';
+    return `<span class="rhd">${ep.padEnd(6)}</span><span class="rho">${ho}</span> <span class="rtr">${tr}</span>`;
+  }).join('\n');
+  return s;
+}
+
+function buildGridDOM(cards){
+  const grid=$('grid'); grid.innerHTML='';
+  for(const k in cardEls) delete cardEls[k];
+  for(const c of cards){
+    const root=document.createElement('div');
+    root.className='card '+(c.state==='RUNNING'?'run':c.state==='QUEUED'?'queue':'done');
+    root.addEventListener('click',()=>{ if(c.kind!=='run') return; selectedRun=c.id; lastGood=null; viewMode='single'; refresh(); });
+    const chd=document.createElement('div'); chd.className='chd';
+    const nm=document.createElement('span'); nm.className='cname'; nm.textContent=c.id;
+    const bd=document.createElement('span'); bd.className='badge '+c.state; bd.textContent=c.state;
+    chd.appendChild(nm); chd.appendChild(bd); root.appendChild(chd);
+    let canvas=null, rows=null;
+    if(c.kind==='queue'){
+      const qn=document.createElement('div'); qn.className='qnote';
+      qn.textContent=c.note? ('◷ '+c.note) : '◷ queued (waiting for GPU)';
+      root.appendChild(qn);
+    } else {
+      const cc=document.createElement('div'); cc.className='cchart';
+      const meta=document.createElement('div'); meta.className='cmeta';
+      canvas=document.createElement('canvas'); cc.appendChild(canvas); cc.appendChild(meta); root.appendChild(cc);
+      rows=document.createElement('div'); rows.className='crows'; root.appendChild(rows);
+      cardEls[c.id]={root,badge:bd,canvas,rows,meta};
+    }
+    grid.appendChild(root);
+  }
+}
+
+function renderGrid(){
+  const now=Date.now();
+  const keys=discoverRunKeys();
+  availableRuns=keys;                       // keep single-view key nav in sync
+  const runs=keys.map(loadRun);
+  // RUNNING window = 6 min: GPU contention (benchmarks sharing the card) can slow a live
+  // run's progress writes to minutes apart — a 60s window misclassifies live runs as DONE.
+  const RUN_MS=360000;
+  // STABLE ordering (alphabetical) — sorting by mtime reshuffled card order every poll,
+  // which changed the grid signature and forced a full DOM rebuild each tick (the flash).
+  const byName=(a,b)=>a.runKey<b.runKey?-1:1;
+  const running=runs.filter(r=> now-r.mtime<RUN_MS).sort(byName);
+  const done   =runs.filter(r=> now-r.mtime>=RUN_MS).sort(byName);
+  const queue=discoverQueue();
+  const runSet=new Set(keys);
+  // evict dead/cycled-out runs from the per-run cache so it can't grow unbounded over a
+  // long overnight session. `keys` is anti-flash (last-good on torn readdir) -> safe.
+  for(const k in runCache){ if(!runSet.has(k)) delete runCache[k]; }
+  const cards=[];
+  running.forEach(r=>cards.push({id:r.runKey,kind:'run',state:'RUNNING',data:r}));
+  queue.forEach(q=>{ if(!q.done && !runSet.has(String(q.id).toUpperCase()))
+      cards.push({id:q.id,kind:'queue',state:'QUEUED',note:q.note}); });
+  done.forEach(r=>cards.push({id:r.runKey,kind:'run',state:'DONE',data:r}));
+
+  const sig=cards.map(c=>c.id+':'+c.kind).join('|');
+  if(sig!==gridSig){ buildGridDOM(cards); gridSig=sig; }
+
+  // update in place (badge/state class + chart + rows), track grok
+  // anti-flash: only repaint a card when its underlying data (mtime) or state changed —
+  // software rendering repaints are visible, so unconditional 2.5s redraws strobe.
+  let grokRun=null;
+  for(const c of cards){
+    if(c.kind!=='run') continue;
+    const el=cardEls[c.id]; if(!el) continue;
+    const stamp=c.data.mtime+':'+c.state+':'+c.data.recs.length;
+    const dirty=(el._stamp!==stamp);
+    el._stamp=stamp;
+    if(dirty){
+      el.root.className='card '+(c.state==='RUNNING'?'run':'done');
+      el.badge.className='badge '+c.state; el.badge.textContent=c.state;
+    }
+    let grok=el._grok;
+    if(dirty){
+      grok=drawMini(el.canvas, c.data.recs); el._grok=grok;
+      const m=c.data.meta||{};
+      const last=c.data.recs.length?c.data.recs[c.data.recs.length-1]:null;
+      el.meta.textContent=(last?('ep '+fmtInt(last.epoch)):'')+(m.wd!==undefined?('  wd'+m.wd):'');
+      el.rows.innerHTML=rowsHTML(c.data.recs);
+    }
+    if(grok){ el.root.classList.add('grokd'); if(!grokRun) grokRun=c.id; }
+  }
+  // grid header counts
+  $('g_cnt').textContent=runs.length; $('g_run').textContent=running.length;
+  $('g_q').textContent=cards.filter(c=>c.kind==='queue').length;
+  $('g_grokwrap').style.display=grokRun?'inline':'none';
+  if(grokRun) $('g_grok').textContent=grokRun;
+}
+
+function tailLog(){
+  if(!lastLogFile) return null;
+  try{
+    const txt=fs.readFileSync(path.join(GROK_DIR,lastLogFile),'utf8');
+    const lines=txt.split(/\r?\n/).filter(l=>l.length);
+    return {file:lastLogFile, lines:lines.slice(-15)};
+  }catch(e){ return null; }
+}
+
+// ---------- formatting ----------
+const $=id=>document.getElementById(id);
+function fmtDur(s){ s=+s; if(!isFinite(s)) return '–';
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=Math.floor(s%60);
+  return (h?h+'h':'')+(m||h?String(m).padStart(h?2:1,'0')+'m':'')+String(ss).padStart(2,'0')+'s'; }
+function fmtNum(v,d=4){ return (typeof v==='number' && isFinite(v))?v.toFixed(d):'–'; }
+function fmtInt(v){ if(v==null) return '–'; if(v>=1e6) return (v/1e6).toFixed(2)+'M'; if(v>=1e3) return (v/1e3).toFixed(1)+'k'; return ''+v; }
+function fmtClock(v){ if(v==null) return '–';
+  if(typeof v==='number'){ const d=new Date(v>1e12?v:v*1000); return d.toLocaleTimeString(); }
+  const d=new Date(v); return isNaN(d)?String(v):d.toLocaleTimeString(); }
+
+// ---------- charts ----------
+function drawChart(canvas, recs, keyA, keyB, opts){
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth, H=canvas.clientHeight;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const padL=44,padR=10,padT=18,padB=18;
+  const x0=padL,x1=W-padR,y0=padT,y1=H-padB;
+  ctx.strokeStyle='#1f2733'; ctx.fillStyle='#7d8590'; ctx.font='10px Consolas';
+  // gather points
+  const pts=recs.filter(r=>r.epoch!==undefined);
+  const A=pts.filter(r=>r[keyA]!==undefined).map(r=>[r.epoch,r[keyA]]);
+  const B=pts.filter(r=>r[keyB]!==undefined).map(r=>[r.epoch,r[keyB]]);
+  if(A.length===0 && B.length===0){ ctx.fillText('no '+keyA+' / '+keyB+' data',x0+6,(y0+y1)/2); return null; }
+  const all=A.concat(B);
+  let eps=pts.map(r=>r.epoch);
+  let exMin=Math.min(...eps), exMax=Math.max(...eps);
+  let vMin=Math.min(...all.map(p=>p[1])), vMax=Math.max(...all.map(p=>p[1]));
+  if(opts.accRange){ vMin=Math.min(vMin,0.5); vMax=Math.max(vMax,0.5); }
+  const pad=(vMax-vMin)*0.08||0.01; vMin-=pad; vMax+=pad;
+  const logx=opts.logx && exMin>0;
+  const sx=e=>{ if(logx){ const a=Math.log10(Math.max(exMin,1)), b=Math.log10(Math.max(exMax,10));
+      return x0 + (Math.log10(Math.max(e,1))-a)/((b-a)||1)*(x1-x0); }
+    return x0 + (e-exMin)/((exMax-exMin)||1)*(x1-x0); };
+  const sy=v=>y1-(v-vMin)/((vMax-vMin)||1)*(y1-y0);
+  // gridlines + y labels
+  ctx.strokeStyle='#161c26';
+  for(let g=0;g<=4;g++){ const yy=y0+g/4*(y1-y0); const vv=vMax-(g/4)*(vMax-vMin);
+    ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();
+    ctx.fillStyle='#5c6672'; ctx.fillText(vv.toFixed(opts.accRange?3:3),3,yy+3); }
+  // 0.5 reference for accuracy
+  if(opts.accRange && 0.5>=vMin && 0.5<=vMax){ ctx.strokeStyle='#30363d'; ctx.setLineDash([3,3]);
+    const y5=sy(0.5); ctx.beginPath();ctx.moveTo(x0,y5);ctx.lineTo(x1,y5);ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#5c6672'; ctx.fillText('0.50',x1-26,y5-2); }
+  // x labels
+  ctx.fillStyle='#5c6672';
+  ctx.fillText(logx?('log '+exMin):(''+exMin), x0, y1+13);
+  ctx.fillText(''+exMax, x1-30, y1+13);
+  function plot(arr,color,width){
+    if(arr.length===0) return;
+    ctx.strokeStyle=color; ctx.lineWidth=width; ctx.beginPath();
+    arr.forEach(([e,v],i)=>{ const X=sx(e),Y=sy(v); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+    ctx.stroke();
+  }
+  plot(A,'#58a6ff',1.2);      // train
+  plot(B,'#d29922',2.0);      // holdout (highlighted)
+  // grok detector: holdout late jump. compare late-window holdout to its early plateau.
+  let grok=false, grokInfo=null;
+  if(opts.accRange && B.length>=8){
+    const bs=B.map(p=>p[1]); const q=Math.max(3,Math.floor(bs.length*0.3));
+    const early=bs.slice(0,q); const late=bs.slice(-q);
+    const em=early.reduce((a,b)=>a+b,0)/early.length;
+    const lm=late.reduce((a,b)=>a+b,0)/late.length;
+    if(em<0.55 && (lm-em)>0.06 && lm>0.57){ grok=true; grokInfo={em,lm}; }
+    // annotate the jump point
+    if(grok){
+      // find max positive slope index in latter half
+      let bi=Math.floor(bs.length/2), best=0;
+      for(let i=Math.floor(bs.length/2);i<bs.length;i++){ const d=bs[i]-bs[i-1]||0; if(d>best){best=d;bi=i;} }
+      const [ge,gv]=B[bi]; const gx=sx(ge),gy=sy(gv);
+      ctx.fillStyle='#d29922'; ctx.strokeStyle='#d29922'; ctx.beginPath();ctx.arc(gx,gy,3,0,7);ctx.fill();
+      ctx.fillText('GROK ↑', Math.min(gx+5,x1-40), gy-4);
+    }
+  }
+  return {grok, grokInfo};
+}
+
+// ---------- refresh loop ----------
+let lastMTime=0;
+function refresh(){
+  // auto-default to GRID once >=3 runs exist. Stay null (render single meanwhile)
+  // until then, and KEEP re-checking each refresh — so we never lock into single
+  // just because the first poll happened to race a dir write / see <3 files. Once
+  // the user presses G or clicks a card, viewMode is set explicitly and won't flip.
+  if(viewMode===null && discoverRunKeys().length>=3){ viewMode='grid'; }
+  if(viewMode==='grid'){
+    if($('gridwrap').style.display!=='flex'){ $('gridwrap').style.display='flex'; $('wrap').style.display='none'; }
+    try{ renderGrid(); }catch(e){ /* non-fatal */ }
+    return;
+  }
+  if($('wrap').style.display!=='flex'){ $('gridwrap').style.display='none'; $('wrap').style.display='flex'; }
+
+  const {recs, st, src} = loadAll();
+  const logx=$('logx').checked;
+
+  // anti-flash: skip the (visible) software-render chart repaint when nothing changed
+  const sStamp=selectedRun+':'+recs.length+':'+(recs.length?recs[recs.length-1].epoch:0)+':'+logx+':'+window.innerWidth+'x'+window.innerHeight;
+  const sDirty=(sStamp!==singleStamp); singleStamp=sStamp;
+  let gAcc=lastGAcc;
+  if(sDirty){
+    drawChart($('cLoss'), recs, 'train_loss','val_loss', {logx, accRange:false});
+    gAcc=drawChart($('cAcc'), recs, 'train_acc','val_acc', {logx, accRange:true});
+    lastGAcc=gAcc;
+  }
+
+  // header
+  const latest = recs.length?recs[recs.length-1]:{};
+  const modeRaw = st.mode!==undefined?String(st.mode):'–';
+  const mEl=$('h_mode'); mEl.textContent=modeRaw;
+  mEl.className = /a/i.test(modeRaw)&&!/b/i.test(modeRaw)?'modeA':(/b/i.test(modeRaw)?'modeB':'');
+  $('h_epoch').textContent = latest.epoch!==undefined?fmtInt(latest.epoch):'–';
+  $('h_sps').textContent   = st.sps!==undefined?(+st.sps).toFixed(0):'–';
+  $('h_elapsed').textContent = st.elapsed!==undefined?fmtDur(st.elapsed):'–';
+  $('h_ckpt').textContent  = st.ckpt!==undefined?fmtClock(st.ckpt):'–';
+  $('h_lr').textContent    = st.lr!==undefined?(+st.lr).toPrecision(3):'–';
+  $('h_wd').textContent    = st.wd!==undefined?(+st.wd).toPrecision(3):'–';
+  $('h_dev').textContent   = st.device!==undefined?String(st.device).toUpperCase():'–';
+  $('h_params').textContent= st.params!==undefined?fmtInt(+st.params):'–';
+
+  const grok = (gAcc&&gAcc.grok);
+  $('h_grokwrap').style.display = grok?'inline':'none';
+  if(grok) $('h_grok').textContent = 'GROK ↑ holdout '+(gAcc.grokInfo.em).toFixed(2)+'→'+(gAcc.grokInfo.lm).toFixed(2);
+
+  // baselines strip
+  const netHold = (latest.val_acc!==undefined)?latest.val_acc:undefined;
+  const nochg = st.nochg, lin = st.lin;
+  $('b_nochg').querySelector('b').textContent = nochg!==undefined?(+nochg).toFixed(4):'–';
+  const bl=$('b_lin'); bl.querySelector('b').textContent = lin!==undefined?(+lin).toFixed(4):'–';
+  const bn=$('b_net'); bn.querySelector('b').textContent = netHold!==undefined?(+netHold).toFixed(4):'–';
+  // color net vs linear-probe (higher AUC = better)
+  bn.className='b'; bl.className='b';
+  if(netHold!==undefined && lin!==undefined){
+    if(netHold>lin){ bn.classList.add('beat'); } else { bn.classList.add('lose'); }
+  }
+
+  // point count / warn
+  $('npts').textContent = recs.length?('('+recs.length+' epochs logged)'):'';
+
+  // source line
+  $('srcline').textContent = 'source: '+lastSourceDesc+'   ·   dir: '+GROK_DIR;
+
+  // raw log tail
+  const t=tailLog();
+  const lp=$('logpanel');
+  if(t && t.lines.length){
+    lp.innerHTML='<span class="lh">── '+t.file+' (last '+t.lines.length+') ──</span>\n'+
+      t.lines.map(l=>l.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))).join('\n');
+    lp.scrollTop=lp.scrollHeight;
+  } else if(recs.length===0){
+    lp.innerHTML='<span class="lh">waiting for training data…  (polling '+GROK_DIR+' every 2.5s)</span>';
+  }
+}
+
+// fs.watch (best-effort) + interval fallback
+try{
+  fs.watch(path.resolve(GROK_DIR,'..'), {persistent:false}, ()=>{ /* dir-level changes; refresh soon */ });
+  // watch grok dir itself if it exists
+  try{ fs.watch(GROK_DIR,{persistent:false}, ()=>refreshSoon()); }catch(e){}
+}catch(e){}
+let pending=null;
+// 2.5s debounce: training rewrites progress files several times/sec — a 300ms debounce
+// turned fs.watch into ~3 full software repaints/sec (the visible strobing).
+function refreshSoon(){ if(pending) return; pending=setTimeout(()=>{pending=null;refresh();},2500); }
+
+$('logx').addEventListener('change', refresh);
+window.addEventListener('resize', refresh);
+setInterval(refresh, 2500);
+refresh();
+</script>
+</body>
+</html>

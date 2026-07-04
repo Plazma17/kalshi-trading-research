@@ -1,0 +1,1 @@
+fn main(){let t=std::time::Instant::now();let mut s=0u64;for i in 0..100_000_000u64{s=s.wrapping_add(i);}println!("sum={} in {:?}",s,t.elapsed());}

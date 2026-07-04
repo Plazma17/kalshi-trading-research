@@ -1,0 +1,17 @@
+[package]
+name = "cta_scan"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rayon = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+[[bin]]
+name = "cta_scan"
+path = "src/main.rs"

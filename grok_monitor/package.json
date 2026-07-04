@@ -1,0 +1,7 @@
+{
+  "name": "grok-monitor",
+  "version": "1.0.0",
+  "description": "Standalone Electron status monitor for the local NN (grok) training run.",
+  "main": "main.js",
+  "private": true
+}

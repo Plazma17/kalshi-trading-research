@@ -1,0 +1,1070 @@
+:root {
+  --bg: #000000;
+  --panel: #0a0e0a;
+  --border: #1c241c;
+  --text: #cdd6cd;
+  --dim: #6b786b;
+  --amber: #f0a000;
+  --cyan: #4fd0e0;
+  --up: #3ec46d;
+  --down: #ff5555;
+  --hold: #e0b020;
+  --hot: #ffcf4d;
+  font-family: 'Cascadia Mono', 'Consolas', ui-monospace, 'Courier New', monospace;
+  font-size: 13px;
+}
+
+/* ── NIGHT theme: all dim gray + black, low-brightness, readable in the dark.
+   Remaps the accent variables to muted grays and dials down the few bright
+   literal colors so nothing glows when screen brightness is turned way down. */
+[data-theme='night'] {
+  --bg: #000000;
+  --panel: #070707;
+  --border: #181818;
+  --text: #8c8c8c;
+  --dim: #4d4d4d;
+  --amber: #7c7c7c;
+  --cyan: #6f7a7a;
+  --up: #5c8266;
+  --down: #946060;
+  --hold: #80795f;
+  --hot: #909090;
+}
+/* neutralize the green-tinted near-black literals + the bright direction reds/greens */
+[data-theme='night'] .tab.active,
+[data-theme='night'] button,
+[data-theme='night'] .chip,
+[data-theme='night'] .segbtn,
+[data-theme='night'] .tip,
+[data-theme='night'] .tlabel,
+[data-theme='night'] .addticker {
+  background: #0d0d0d;
+}
+[data-theme='night'] .tab:not(.dim):not(.active):hover {
+  background: #131313;
+}
+[data-theme='night'] td.dir.bull {
+  color: #5fa873;
+}
+[data-theme='night'] td.dir.bear {
+  color: #b35a5a;
+}
+[data-theme='night'] .area.up {
+  fill: rgba(92, 130, 102, 0.12);
+}
+[data-theme='night'] .area.down {
+  fill: rgba(148, 96, 96, 0.12);
+}
+[data-theme='night'] .fill.indet {
+  background: repeating-linear-gradient(90deg, var(--amber) 0 10px, #3a3a3a 10px 20px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.term {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── ribbon ─────────────────────────────────────────────────────────── */
+.ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  background: #050805;
+  border-bottom: 1px solid var(--border);
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ribbon .brand {
+  color: var(--amber);
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding-right: 10px;
+}
+
+.ribbon .seg {
+  padding: 0 10px;
+  border-left: 1px solid var(--border);
+}
+
+.lbl {
+  color: var(--cyan);
+  margin-right: 5px;
+}
+
+.ok {
+  color: var(--up);
+}
+.warn {
+  color: var(--hold);
+}
+.bad {
+  color: var(--down);
+}
+.dim {
+  color: var(--dim);
+}
+.hot {
+  color: var(--hot);
+}
+
+/* ── tabs ───────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 5px 14px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  border-right: 1px solid var(--border);
+  cursor: default;
+}
+
+.tab.active {
+  background: #0f160f;
+  color: var(--amber);
+  border-bottom: 2px solid var(--amber);
+}
+
+.tab:not(.dim) {
+  cursor: pointer;
+}
+
+.tab:not(.dim):not(.active):hover {
+  background: #0c110c;
+  color: var(--text);
+}
+
+/* ── settings / workspace ───────────────────────────────────────────── */
+.mt {
+  margin-top: 18px;
+}
+
+.kv {
+  display: flex;
+  gap: 12px;
+  padding: 2px 0;
+  font-size: 13px;
+}
+
+.kv .k,
+.field .k {
+  color: var(--cyan);
+  min-width: 320px;
+  display: inline-block;
+}
+
+.path {
+  color: var(--text);
+  word-break: break-all;
+}
+
+.wsbtns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.flash {
+  margin-left: 8px;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.field input {
+  flex: 1;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.note {
+  max-width: 720px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ── topics & stocks board ──────────────────────────────────────────── */
+.topicsbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-content: flex-start;
+}
+
+.topicbox {
+  width: 230px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--cyan);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.topichead {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tname {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 2px;
+}
+
+.tlabel {
+  background: #0a0e0a;
+  border: 1px solid var(--border);
+  color: var(--cyan);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+.tname:focus,
+.tlabel:focus,
+.addticker:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.x {
+  background: transparent;
+  border: none;
+  color: var(--dim);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  margin: 0;
+}
+.x:hover {
+  color: var(--down);
+  background: transparent;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #0f160f;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  padding: 1px 4px;
+}
+
+.chip .cnt {
+  color: var(--amber);
+  font-size: 9px;
+  vertical-align: super;
+}
+
+.chipx {
+  background: transparent;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  margin: 0;
+}
+.chipx:hover {
+  color: var(--down);
+  background: transparent;
+}
+
+.addticker {
+  background: #0a0e0a;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 3px 4px;
+}
+
+/* ── review / fast labeling ─────────────────────────────────────────── */
+.reviewbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.reviewbar .seg2 {
+  color: var(--dim);
+}
+
+.headline {
+  font-size: 20px;
+  line-height: 1.35;
+  margin: 8px 0 16px;
+  max-width: 900px;
+}
+
+.classifying {
+  padding: 12px 0;
+}
+
+.raterow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+button.rate {
+  min-width: 78px;
+  font-size: 13px;
+  font-weight: 700;
+  border-width: 1px;
+  padding: 9px 14px;
+}
+
+button.rate.bad {
+  color: var(--down);
+  border-color: var(--down);
+}
+button.rate.bad:hover:not(:disabled) {
+  background: var(--down);
+  color: #000;
+}
+
+button.rate.ok {
+  color: var(--hold);
+  border-color: var(--hold);
+}
+button.rate.ok:hover:not(:disabled) {
+  background: var(--hold);
+  color: #000;
+}
+
+button.rate.good {
+  color: var(--up);
+  border-color: var(--up);
+}
+button.rate.good:hover:not(:disabled) {
+  background: var(--up);
+  color: #000;
+}
+
+button.rate.skip {
+  color: var(--dim);
+  border-color: var(--border);
+}
+
+/* selected overall verdict — filled */
+button.rate.bad.on {
+  background: var(--down);
+  color: #000;
+}
+button.rate.ok.on {
+  background: var(--hold);
+  color: #000;
+}
+button.rate.good.on {
+  background: var(--up);
+  color: #000;
+}
+
+.ovr {
+  min-width: 70px;
+  display: inline-block;
+}
+
+/* per-signal 3-state control */
+.seg3 {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.segbtn {
+  font-size: 11px;
+  letter-spacing: 0;
+  padding: 2px 7px;
+  background: #0f160f;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  cursor: pointer;
+  font-family: inherit;
+}
+.segbtn:hover {
+  color: var(--text);
+}
+.segbtn.bad.on {
+  background: var(--down);
+  color: #000;
+  border-color: var(--down);
+}
+.segbtn.ok.on {
+  background: var(--hold);
+  color: #000;
+  border-color: var(--hold);
+}
+.segbtn.good.on {
+  background: var(--up);
+  color: #000;
+  border-color: var(--up);
+}
+
+.commentbox {
+  flex: 1;
+  background: #0a0e0a;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px;
+  margin-left: 8px;
+}
+.commentbox:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.reviewdone {
+  padding: 24px 0;
+  font-size: 15px;
+}
+
+/* ── data import ────────────────────────────────────────────────────── */
+select {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 6px;
+}
+select:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.importer {
+  border: 1px solid var(--border);
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.maprow {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.maprow .field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.maprow .field .k {
+  min-width: 0;
+}
+
+/* ── backtest dashboard ─────────────────────────────────────────────── */
+.btconfig {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.btconfig .field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+.btconfig .field .k {
+  min-width: 0;
+}
+.btconfig input,
+.btconfig select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 6px;
+  width: 130px;
+}
+
+.small {
+  font-size: 11px;
+}
+
+.bignums {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 8px 0;
+}
+
+.bnval {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--amber);
+}
+.bnval.ok {
+  color: var(--up);
+}
+.bnval.bad {
+  color: var(--down);
+}
+
+.bnlbl {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+}
+
+.equity {
+  width: 100%;
+  max-width: 760px;
+  height: 120px;
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+.eqline {
+  fill: none;
+  stroke-width: 1.5;
+}
+.eqline.up {
+  stroke: var(--up);
+}
+.eqline.down {
+  stroke: var(--down);
+}
+.zeroline {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.dashcols {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.dashcol {
+  flex: 1;
+  min-width: 320px;
+}
+
+.barrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+.barlabel {
+  width: 110px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bartrack {
+  flex: 1;
+  height: 10px;
+  background: #0a0e0a;
+  border: 1px solid var(--border);
+}
+.barfill2 {
+  display: block;
+  height: 100%;
+  background: var(--amber);
+}
+.barval {
+  width: 90px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.clickrow {
+  cursor: pointer;
+}
+.clickrow:hover td {
+  background: #0c110c;
+}
+
+/* ── prompt / tuning ────────────────────────────────────────────────── */
+.promptbox {
+  width: 100%;
+  min-height: 180px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.promptbox:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.guidelines {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--text);
+}
+.guidelines li {
+  margin: 2px 0;
+}
+
+.compiled {
+  background: #050805;
+  border: 1px solid var(--border);
+  padding: 10px;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--dim);
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* ── charts ─────────────────────────────────────────────────────────── */
+.chart {
+  width: 100%;
+  height: 130px;
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.area.up {
+  fill: rgba(62, 196, 109, 0.15);
+  stroke: none;
+}
+.area.down {
+  fill: rgba(255, 85, 85, 0.15);
+  stroke: none;
+}
+.vbar.up {
+  fill: var(--up);
+}
+.vbar.down {
+  fill: var(--down);
+}
+.dot.up {
+  fill: var(--up);
+  opacity: 0.65;
+}
+.dot.down {
+  fill: var(--down);
+  opacity: 0.65;
+}
+
+/* net-worth-over-time chart (labeled axes, fixed time x-domain) */
+.nwchart {
+  width: 100%;
+  max-width: 880px;
+  height: 215px;
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+.nwchart .nwgrid {
+  stroke: #141a14;
+  stroke-width: 1;
+}
+.nwchart .nwaxis {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.nwchart .nwinit {
+  stroke: var(--dim);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.nwchart .nwline {
+  fill: none;
+  stroke-width: 1.5;
+}
+.nwchart .nwline.up {
+  stroke: var(--up);
+}
+.nwchart .nwline.down {
+  stroke: var(--down);
+}
+.nwchart .nwtick {
+  fill: var(--dim);
+  font-size: 9px;
+  font-family: inherit;
+}
+.nwchart .nwaxlabel {
+  fill: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-family: inherit;
+}
+
+.chartgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 28px;
+  margin-top: 14px;
+}
+.chartcell {
+  min-width: 0;
+}
+
+/* diverging signed bars (P&L by group) */
+.sbars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sbarrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.sbartrack {
+  flex: 1;
+  position: relative;
+  height: 12px;
+  background: #0a0e0a;
+  border: 1px solid var(--border);
+}
+.sbarmid {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--dim);
+}
+.sbarfill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.sbarfill.up {
+  background: var(--up);
+}
+.sbarfill.down {
+  background: var(--down);
+}
+
+/* baseline marker on accuracy bars (coin-flip line) */
+.bartrack {
+  position: relative;
+}
+.baseline {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  background: var(--amber);
+  opacity: 0.6;
+}
+
+/* ── body ───────────────────────────────────────────────────────────── */
+.body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.block {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 70px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+button {
+  background: #0f160f;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  padding: 6px 18px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--amber);
+  color: #000;
+}
+
+button:disabled {
+  opacity: 0.4;
+  border-color: var(--dim);
+  color: var(--dim);
+  cursor: default;
+}
+
+button.ghost {
+  color: var(--cyan);
+  border-color: var(--border);
+}
+
+button.ghost:hover:not(:disabled) {
+  background: var(--cyan);
+  color: #000;
+}
+
+.hint {
+  font-size: 11px;
+}
+
+/* ── output ─────────────────────────────────────────────────────────── */
+.out {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.summary {
+  margin-bottom: 10px;
+}
+
+table.sig {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+table.sig th {
+  text-align: left;
+  color: var(--cyan);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+  padding: 3px 8px;
+}
+
+table.sig td {
+  padding: 3px 8px;
+  border-bottom: 1px solid #111611;
+  vertical-align: top;
+}
+
+.r,
+table.sig th.r,
+table.sig td.r {
+  text-align: right;
+}
+
+td.topic {
+  color: var(--text);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+td.dir {
+  font-weight: 700;
+  white-space: nowrap;
+}
+td.dir.bull {
+  color: #1aff77;
+}
+td.dir.up {
+  color: var(--up);
+}
+td.dir.neutral {
+  color: var(--dim);
+}
+td.dir.down {
+  color: var(--down);
+}
+td.dir.bear {
+  color: #ff2222;
+}
+
+td.conf {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+td.rat {
+  color: var(--dim);
+}
+
+.notes {
+  margin-top: 10px;
+  color: var(--text);
+  font-style: italic;
+}
+
+.runmeta {
+  margin-top: 10px;
+  color: var(--dim);
+  font-size: 11px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+/* ── hover tooltip (appears after 1s) ───────────────────────────────── */
+.tipwrap {
+  position: relative;
+  display: inline-block;
+}
+
+.tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  background: #0f160f;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  padding: 3px 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ── per-classification progress ────────────────────────────────────── */
+.prog {
+  margin-top: 12px;
+  max-width: 520px;
+}
+
+.track {
+  height: 8px;
+  background: #0a0e0a;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--amber);
+  transition: width 0.15s linear;
+}
+
+.fill.indet {
+  width: 35%;
+  background: repeating-linear-gradient(90deg, var(--amber) 0 10px, #7a5200 10px 20px);
+  animation: indet 1s linear infinite;
+}
+
+@keyframes indet {
+  0% {
+    margin-left: -35%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
+.progmsg {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--cyan);
+}
+
+/* tighten scrollbars to match */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #1c241c;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
